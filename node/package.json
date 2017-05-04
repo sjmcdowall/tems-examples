@@ -2,7 +2,7 @@
   "name": "tems-examples-node",
   "description": "tems-examples-node - grab TEMS Restful HTTP POST messages and log them.",
   "version": "1.0.0",
-  "main": "./build/bundle.js",
+  "main": "./main.js",
   "scripts": {
     "clean": "rm -rf ./node_modules",
     "prestart": "test -d node_modules || npm install",

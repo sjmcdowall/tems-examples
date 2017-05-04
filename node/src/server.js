@@ -18,6 +18,10 @@ const app = express();
 const logger = bunyan.createLogger({name: 'tems-examples-node'});
 logger.level(bunyan.DEBUG);
 
+// Grab other environment variables
+const createReplayFile = process.env.TEMS_CREATE_REPLAY_FILE;
+const replayFileDir = process.env.TEMS_REPLAY_FILE_DIR;
+const addToQueue = false;
 
 // Increase the buffer sizes to handle large JSON payloads from the Tester
 app.use(bodyParser.urlencoded({ extended: false, limit: MAX_SIZE }));
@@ -38,4 +42,4 @@ app.listen(port, () =>
     logger.info(`${SERVICE_NAME} is listening on port ${port}`)
 );
 
-export { logger };
+export { logger, createReplayFile, replayFileDir, addToQueue };

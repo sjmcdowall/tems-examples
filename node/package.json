@@ -1,0 +1,57 @@
+{
+  "name": "tems-examples-node",
+  "description": "tems-examples-node - grab TEMS Restful HTTP POST messages and log them.",
+  "version": "1.0.0",
+  "main": "./build/bundle.js",
+  "scripts": {
+    "clean": "rm -rf ./node_modules",
+    "prestart": "test -d node_modules || npm install",
+    "start": "cross-env NODE_ENV=development node --harmony-async-await main",
+    "prelint": "which eslint || npm install --global eslint",
+    "lint": "eslint ./src/."
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+ssh://git@github.com:sjmcdowall/tems-examples.git"
+  },
+  "author": "Steven McDowall <steve_mcdowall@mentor.com>",
+  "license": "LGPL-3.0",
+  "homepage": "https://github.com/sjmcdowall/tems-examples/node/#readme",
+  "keywords": [
+    "javascript",
+    "nodejs",
+    "tems"
+  ],
+  "dependencies": {
+    "babel-core": "^6.24.1",
+    "babel-polyfill": "^6.22.0",
+    "body-parser": "1.16.0",
+    "bunyan": "^1.8.10",
+    "cross-env": "3.1.3",
+    "envalid": "2.4.1",
+    "express": "4.14.0",
+    "express-bunyan-logger": "1.3.1",
+    "glob": "7.1.1",
+    "moment": "^2.17.0",
+    "response-time": "2.3.2",
+    "superagent": "3.3.1"
+  },
+  "devDependencies": {
+    "babel-eslint": "7.2.1",
+    "babel-loader": "6.2.4",
+    "babel-preset-env": "^1.4.0",
+    "babel-preset-es2015": "6.24.1",
+    "babel-preset-es2017-node7": "^0.5.2",
+    "eslint": "3.19.0",
+    "eslint-config-airbnb": "^14.0.0",
+    "eslint-plugin-import": "^2.2.0",
+    "eslint-plugin-jsx-a11y": "^4.0.0",
+    "eslint-plugin-react": "^6.1.2",
+    "json-loader": "0.5.4"
+  },
+  "babel": {
+    "presets": [
+      "es2017-node7"
+    ]
+  }
+}

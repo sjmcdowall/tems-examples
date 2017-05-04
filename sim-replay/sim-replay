@@ -1,0 +1,157 @@
+#!/usr/bin/env node
+"use strict";
+const program = require('commander');
+const fs = require('fs');
+const request = require('superagent');
+const moment = require('moment');
+
+/* Used only to get the version */
+const pkg = require('./package.json');
+
+/* Used for time delay */
+let timestamps = [];
+let delays = [];
+let file = "";
+
+/* Parse the command line arguments */
+program
+    .version(pkg.version)
+    .arguments('<replay-file>')
+    .option('-u --url [url]', 'URL to post the messages in the replay file')
+    .option('-t --tester-id [tester-id]',
+        'Override tester id [tester-id]', 'Tester123')
+    .option('-d --delay-percent [delay-percent]',
+            'Set delay to this % of the actual delay [delay-percent]', '100')
+    .option('-m --max-delay [max-delay]',
+            'Specify the max delay in ms [max-delay]', '10000')
+    .option('-n --now', 'Change timestamp to current time')
+    .action( (replayFile) => file = replayFile )
+    .parse(process.argv);
+
+/* Debug the arguments */
+print_arguments();
+
+/* Main function */
+if (typeof file !== 'undefined') {
+    read_replay_file(file)
+        .then( list => {
+            /* Iterator function that adds a delay */
+            let i = 0, l = list.length - 1;
+            function iterator() {
+                /* Post the message to catcher */
+                post_message(list[i])
+                .then(res => {
+                  /* print delay for debugging */
+                  console.log(delays[i]);
+                  if(i < l) {
+                      setTimeout(iterator, delays[i]);
+                      i++;
+                  }
+              });
+            }
+            /* Call the iterator function */
+            iterator();
+        });
+}
+else {
+    console.log('\nERROR:  You forgot to add the file!!!');
+    program.outputHelp();
+}
+
+/* Reads the replay file line by line */
+function read_replay_file(inputFile) {
+    return new Promise((resolve, reject) => {
+        fs.readFile(inputFile, 'utf-8', (err, data) => {
+            if (err) {
+                reject (err);
+            } else {
+                let parsedData = data.split(/\n/)
+                    .filter(line => line.trim())
+                    .map((line) => JSON.parse(line))
+                    .map((obj, i) => {
+                        /* Save timestamps for calculating delay */
+                        timestamps.push(obj.body.TIME_STAMP);
+                        /* Replace test cell */
+                        obj.url = obj.url.replace(/.*\/TEST_CELL\/[^/]+\//,
+                            `/TEST_CELL/${program.testerId}/`);
+                        /* Calculate the delay to apply */
+                        let delay = 0;
+                        /* First message won't have a delay) */
+                        if ( i === 0) {
+                            delay = 0;
+                        }
+                        /* Check if the timestamps are defined and take diff */
+                        else if ( typeof timestamps[i] !== 'undefined' &&
+                            typeof timestamps[i - 1] !== 'undefined' ) {
+                            let orig_delay = moment.utc(timestamps[i])
+                                .diff(timestamps[i - 1]);
+                            delay = Math.round(orig_delay *
+                                    (program.delayPercent / 100));
+                        }
+                        /* If either timestamp is not defined use max delay */
+                        else {
+                            delay = program.maxDelay;
+                        }
+                        /* Add abs value of delay to array...I was getting
+                            negative numbers on test files */
+                        delay = Math.abs(delay);
+                        /* Max delay is 10 seconds */
+                        if (delay > program.maxDelay) {
+                            delay = program.maxDelay;
+                        }
+                        /* Store the delay into an array */
+                        delays.push(delay);
+
+                        return obj;
+                    });
+                resolve(parsedData);
+            }
+        });
+    });
+}
+
+/* Posts each line of the replay message */
+function post_message(obj) {
+    return new Promise((resolve, reject) => {
+        /* Get current time, which naturally includes the delay */
+        let now = moment.utc();
+
+        /* If user wants to change the times to current times */
+        if(program.now) {
+            /* Format time and replace the original time with current time */
+            const fmt = 'YYYY-MM-DDTHH:mm:ss.SSS[Z]';
+            obj.body.TIME_STAMP = now.format(fmt);
+        }
+
+        /* Convert the object to a string */
+        let msg = JSON.stringify(obj.body);
+
+        console.log(msg);
+        console.log();
+
+        /* submit the post request */
+        const totalURL = `${program.url}${obj.url}`;
+        console.log(totalURL);
+
+        request
+          .post(totalURL)
+          .send(msg)
+          .set('Accept', 'application/json')
+          .set('Content-Type', 'application/json')
+          .end( (err, res) => {
+              if (err) { reject(err); }
+              resolve(res);
+          });
+    });
+}
+
+/* Print the arguments to debug the npm package commander */
+function print_arguments() {
+    console.log('You have chosen the following arguments:');
+    console.log(`\tTester-ID is ${program.testerId}`);
+    console.log(`\tNow is ${program.now}`);
+    console.log(`\tFile is ${file}`);
+    console.log(`\tMax Delay is ${program.maxDelay}`);
+    console.log(`\tDelayPercent is ${program.delayPercent}`);
+    console.log(`\tVersion is ${pkg.version}`);
+}

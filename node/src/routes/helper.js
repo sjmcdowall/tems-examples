@@ -102,7 +102,7 @@ export function addToQ(req, res, next) {
     // SJM - New option to NOT queue the message to be processed ..
     // Used only for severe debugging where you just want to capture the TEMS stream
     if (!addToQueue) {
-        logger.debug(`DEBUG MODE - NOT QUEUEING MESSAGE! URI ${url}  with event of ${event}`);
+        logger.trace(`DEBUG MODE - NOT QUEUEING MESSAGE! URI ${url}  with event of ${event}`);
         next();
 
         return;
